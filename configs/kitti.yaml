@@ -1,0 +1,58 @@
+# Study I: pool-based AL on KITTI, cross-domain targets CODA and BDD100K.
+# Relative paths resolve against this file's directory.
+# Override data_root with --data-root and autolabeling_dir with --autolabeling-dir.
+
+data_root: ../data
+output_dir: ../results
+# Checkout of https://github.com/mos-ks/uncertainty-detection-autolabeling (detector code).
+autolabeling_dir: ../../uncertainty-detection-autolabeling
+
+# AL method -> run name of its trained detector.
+methods:
+  Cal-CB-Ent: KITTI_cal_cb_ent
+  Ent: KITTI_ent
+  Cal-Ent: KITTI_cal_ent
+  CB-Ent: KITTI_cb_ent
+  Random: KITTI_random
+  EpUnc: KITTI_epunc
+  Cal-AlBox: KITTI_cal_albox
+  Cal-EpBox: KITTI_cal_epbox
+  Ent+Al: KITTI_ent_al
+  AlBox: KITTI_albox
+
+detector:
+  # Training config shared by all ten AL methods (MC dropout heads, loss attenuation).
+  hparams: "{autolabeling_dir}/configs/train/allclasses_mcdropout_lossatt_head.yaml"
+  checkpoint: "{autolabeling_dir}/models/trained_models/{run}"
+  # Validation-set predictions of each trained model (inspector.py --mode 6).
+  predictions: "{autolabeling_dir}/results/inference/EXP_{run}/prediction_data_val.txt"
+
+kitti:
+  label_dir: "{data_root}/KITTI/training/label_2"
+  image_dir: "{data_root}/KITTI/training/image_2"
+  val_index: "{data_root}/KITTI/vaL_index_list.txt"
+  tfrecord: "{data_root}/KITTI/tf/_val.tfrecord"
+  num_images: 1496
+  # Depth Anything maps of the KITTI validation images from DepthPrior
+  # (https://github.com/mos-ks/DepthPrior), one <image>_depth.npy per image.
+  depth_dir: "{data_root}/KITTI/depth_validation"
+
+# Cross-domain targets. first_source_id is the image/source_id of the first record.
+targets:
+  CODA:
+    tfrecord: "{data_root}/CODA/tf/_val.tfrecord"
+    num_images: 4884
+    first_source_id: 1
+  BDD:
+    tfrecord: "{data_root}/BDD100K/tf/_val_kitti.tfrecord"
+    num_images: 9916
+    first_source_id: 0
+
+subsets:
+  count: 5
+  fraction: 0.20
+  seed: 42
+
+bootstrap:
+  samples: 1000
+  seed: 42
